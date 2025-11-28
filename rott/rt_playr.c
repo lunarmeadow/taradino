@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdarg.h>
 
 #include "rt_def.h"
+#include "rt_fixed.h"
 #include "rt_sound.h"
 #include "gmove.h"
 #include "states.h"
@@ -2171,26 +2172,33 @@ void PollKeyboardMove(void)
 
 extern int inverse_mouse;
 
+const int mousex_tofracangle = -0x10000;
+
+#define MOUSE_SENSITIVITY_SCALAR 1024
+
 void PollMouseMove(void)
 {
 	int mousexmove, mouseymove;
 
 	// const long inverse_mouse  = 1; //set  to -1 to invert mouse
 	// inverse_mouse def moved to RT_CFG.C
-
 	INL_GetMouseDelta(&mousexmove, &mouseymove);
 
-	MX = -KEYBOARDPREAMBLETURNAMOUNT * mousexmove * mouseadjustment / 16;
+	MX = 0;
+	MY = 0;
 
+	// convert integer pixel deltas to fixed point angles (e.g. 3 pixels becomes 3*65536/65536, and then scale in 1/64 increments along sens)
+	MX = FixedMul(mousexmove * mousex_tofracangle, mouseadjustment * MOUSE_SENSITIVITY_SCALAR);
+	
 	if (usemouselook == true)
 	{
 		playertype *const pstate = &PLAYERSTATE[consoleplayer];
-		pstate->horizon -= inverse_mouse * mouseymove * mouseadjustment_y2 / 8;
+		pstate->horizon -= FixedMul(mouseymove * inverse_mouse, mouseadjustment_y2 * MOUSE_SENSITIVITY_SCALAR);
 		MY = 0;
 	}
 	else
 	{
-		MY = BASEMOVE * mouseymove * mouseadjustment_y / 16;
+		MY = FixedMul(mouseymove, mouseadjustment_y * MOUSE_SENSITIVITY_SCALAR);
 	}
 }
 
@@ -4929,8 +4937,7 @@ void CheckFlying(objtype *ob, playertype *pstate)
 */
 
 #define IN_AIR(ob) \
-	(!((ob->z == nominalheight) || (IsPlatform(ob->tilex, ob->tiley)) || \
-	   (DiskAt(ob->tilex, ob->tiley))))
+	(!((ob->z == nominalheight) || (IsPlatform(ob->tilex, ob->tiley))))
 
 void CheckTemp2Codes(objtype *ob, playertype *pstate)
 {

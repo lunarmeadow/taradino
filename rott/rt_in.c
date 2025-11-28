@@ -285,41 +285,6 @@ static int sdl_mouse_button_filter(SDL_Event const *event)
 	return (0);
 } /* sdl_mouse_up_filter */
 
-static int sdl_mouse_motion_filter(SDL_Event const *event)
-{
-	static int mouse_x = 0;
-	static int mouse_y = 0;
-	int mouse_relative_x = 0;
-	int mouse_relative_y = 0;
-
-	if (event->type == SDL_JOYBALLMOTION)
-	{
-		mouse_relative_x = event->jball.xrel / 100;
-		mouse_relative_y = event->jball.yrel / 100;
-		mouse_x += mouse_relative_x;
-		mouse_y += mouse_relative_y;
-	} /* if */
-	else
-	{
-		if (sdl_mouse_grabbed || sdl_fullscreen)
-		{
-			mouse_relative_x = event->motion.xrel;
-			mouse_relative_y = event->motion.yrel;
-			mouse_x += mouse_relative_x;
-			mouse_y += mouse_relative_y;
-		} /* if */
-		else
-		{
-			mouse_relative_x = event->motion.x - mouse_x;
-			mouse_relative_y = event->motion.y - mouse_y;
-			mouse_x = event->motion.x;
-			mouse_y = event->motion.y;
-		} /* else */
-	} /* else */
-
-	return (0);
-} /* sdl_mouse_motion_filter */
-
 /*
  * The windib driver can't alert us to the keypad enter key, which
  *  Ken's code depends on heavily. It sends it as the same key as the
@@ -502,7 +467,6 @@ static int root_sdl_event_filter(SDL_Event *event)
 			return (sdl_key_filter(event));
 		case SDL_JOYBALLMOTION:
 		case SDL_MOUSEMOTION:
-			return (sdl_mouse_motion_filter(event));
 		case SDL_MOUSEBUTTONUP:
 		case SDL_MOUSEBUTTONDOWN:
 			return (sdl_mouse_button_filter(event));
